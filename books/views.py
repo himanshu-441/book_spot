@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from .recommender import recommend
+from .utils import find_best_book_match
 
 
 
@@ -27,10 +28,26 @@ def recommend_books(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    recommended_data = recommend(user_input)
+    # ✅ STEP 1: Find best DB match
+    best_match = find_best_book_match(user_input)
+
+    if not best_match:
+        return Response(
+            {
+                "message": "No close match found in database",
+                "recommendations": []
+            },
+            status=status.HTTP_200_OK
+        )
+
+    # ✅ STEP 2: Pass canonical name to recommender
+    recommended_data = recommend(best_match)
 
     return Response(
-        {"recommendations": recommended_data},
+        {
+            "matched_book": best_match,
+            "recommendations": recommended_data
+        },
         status=status.HTTP_200_OK
     )
 

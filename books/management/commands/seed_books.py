@@ -16,6 +16,17 @@ class Command(BaseCommand):
             help='Path to Goodreads CSV file'
         )
 
+    def safe_year(value):
+            try:
+                value = value.strip()
+                if value.isdigit() and len(value) == 4:
+                    return int(value)
+            except Exception:
+                pass
+            return 2000 
+
+
+
     def handle(self, *args, **options):
         csv_path = options['csv']
         books_buffer = []
@@ -24,13 +35,15 @@ class Command(BaseCommand):
         with open(csv_path, newline='', encoding='utf-8') as file:
             reader = csv.DictReader(file)
 
-            for idx, row in enumerate(reader, start=1):
-                title = row.get("title")
-                author = row.get("authors")
-                year = row.get("original_publication_year")
-                isbn = row.get("isbn")
-                language = row.get("language_code") or "en"
 
+            for idx, row in enumerate(reader, start=1):
+                title = row.get("Book-Title")
+                author = row.get("Book-Author")
+                year = Command.safe_year(row.get("Year-Of-Publication"))
+                isbn = row.get("ISBN")
+                language = "en"
+                image = row.get("Image-URL-M")
+                self.stdout.write(f"{title} rows processed")
                 if not title or not author:
                     continue
 
@@ -38,9 +51,10 @@ class Command(BaseCommand):
                     Book(
                         name=title[:200],
                         author=author[:150],
-                        arrival=int(float(year)) if year else 2000,
+                        arrival=year,
                         isbn=isbn,
                         language=language[:20],
+                        image=image,
                     )
                 )
 
@@ -65,3 +79,5 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(f"CSV seeding complete → {created} books inserted")
         )
+
+        
